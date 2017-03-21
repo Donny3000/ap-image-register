@@ -18,18 +18,24 @@ namespace ap
      */
       
   public:
-    ImageRegister(string fixed_path,string moving_path);
-    ~ImageRegister();    
+    ImageRegister(string fixed_path, string moving_path);
+    ~ImageRegister() {};
+
+    bool setFixedImage(const Mat& fixed_img);
+    bool setMovingImage(const Mat& moving_img);
+
     Mat calHistogram(Mat image);
     Mat calJointHistogram(Mat image_1, Mat image_2);
-    float calEntropy(Mat image);
-    float calJointEntropy(Mat image_1, Mat image_2);
-    float calMutualInformation(Mat image_1, Mat image_2);
+
+    double calEntropy(Mat image);
+    double calJointEntropy(Mat image_1, Mat image_2);
+    double calMutualInformation(Mat image_1, Mat image_2);
     double calMaxMutualInformationValue(Mat image_1, Mat image_2, int points, int max_iterations=2500);
       
     /* Testing*/      
     
   private:
+    bool initialize(void);
     int getImages(string fixed_path, string moving_path);
     double getNormalRandomNumber(double mean, double stddev, int type);
     Mat calLog2(Mat image);    

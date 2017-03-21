@@ -9,29 +9,45 @@ using namespace ap;
 /**
  * @function main
  */
-int main( int argc, char** argv )
+int main(int argc, char** argv)
 {
+  double minVal, maxVal;
+  Point minLoc, maxLoc;
+
   /*TODO: 
    * > Bash script: DICOM -> JPG or make a C++ class to manage this.
    * > C++ Library or class to manage graphics.
    * > GUI to explore images to make the program easier to use.
    * > Args parser tool for bash or perl scripts
    */
-  ImageRegister imgRegister("ct.jpg","pet.jpg");    
+  //ImageRegister imgRegister("ct.jpg","pet.jpg");
+  cout << "Template Image: " << argv[1] << endl;
+  cout << "Moving Image  : " << argv[2] << endl;
+
+  ImageRegister imgRegister(argv[1], argv[2]);
+
+  // Crop out information row in midwave image
+  Mat midwave_img = imgRegister.getFixedImage();
+  Mat image1_crop = midwave_img( cv::Rect(0, 1, midwave_img.cols, midwave_img.rows-1) );
+
+  // Remove dead pixels from midwave image
+  Mat image1_median;
+  minMaxLoc(image1_crop, &minVal, &maxVal);
+  Mat dead_px_mask = (image1_crop == maxVal);
+  medianBlur(image1_crop, image1_median, 3);
+  image1_median.copyTo(image1_crop, dead_px_mask);
+
+  imgRegister.setFixedImage( image1_crop );
   
   /* Histograms calculation */
-  Mat hist_fixed=imgRegister.calHistogram(imgRegister.getFixedImage());
-  Mat hist_moving=imgRegister.calHistogram(imgRegister.getMovingImage());
+  Mat hist_fixed = imgRegister.calHistogram( imgRegister.getFixedImage() );
+  Mat hist_moving = imgRegister.calHistogram( imgRegister.getMovingImage() );
   
   /* Joint Histogram calculation */
   
-  Mat joint_hist=imgRegister.calJointHistogram(imgRegister.getFixedImage(),imgRegister.getMovingImage());
-  double minVal; 
-  double maxVal; 
-  Point minLoc; 
-  Point maxLoc;
+  Mat joint_hist = imgRegister.calJointHistogram(imgRegister.getFixedImage(), imgRegister.getMovingImage());
   
-  minMaxLoc( joint_hist, &minVal, &maxVal, &minLoc, &maxLoc );
+  minMaxLoc(joint_hist, &minVal, &maxVal, &minLoc, &maxLoc);
   
   cout << "Joint Histogram minimal value : " << minVal << endl;
   cout << "Joint Histogram maximal value : " << maxVal << endl;
@@ -57,28 +73,32 @@ int main( int argc, char** argv )
   }
   /* Testing */
   
-  cout << "Fixed image entropy : " << imgRegister.calEntropy(imgRegister.getFixedImage()) << endl;
-  cout << "Moving image entropy : " << imgRegister.calEntropy(imgRegister.getMovingImage()) << endl;  
-  cout << "Joint Entropy : " << imgRegister.calJointEntropy(imgRegister.getFixedImage(),imgRegister.getMovingImage()) << endl; 
-  cout << "Mutual Information : " << imgRegister.calMutualInformation(imgRegister.getFixedImage(),imgRegister.getMovingImage()) << endl; 
+  cout << "Template image entropy : " << imgRegister.calEntropy(imgRegister.getFixedImage()) << endl;
+  cout << "Moving image entropy   : " << imgRegister.calEntropy(imgRegister.getMovingImage()) << endl;
+  cout << "Joint Entropy          : " << imgRegister.calJointEntropy(imgRegister.getFixedImage(),imgRegister.getMovingImage()) << endl;
+  cout << "Mutual Information     : " << imgRegister.calMutualInformation(imgRegister.getFixedImage(),imgRegister.getMovingImage()) << endl;
   
-  imgRegister.calMaxMutualInformationValue(imgRegister.getFixedImage(),imgRegister.getMovingImage(),1,1);
+  imgRegister.calMaxMutualInformationValue(imgRegister.getFixedImage(), imgRegister.getMovingImage(), 1, 1);
   
   /* Display images and histograms */
   
-  namedWindow("Histogram: Fixed image", CV_WINDOW_AUTOSIZE );
-  imshow("Histogram: Fixed image", histImageFixed );
-  namedWindow("Fixed image", CV_WINDOW_AUTOSIZE );
-  imshow("Fixed image", imgRegister.getFixedImage() );
+  namedWindow("Histogram: Template image", CV_WINDOW_AUTOSIZE );
+  imshow("Histogram: Template image", histImageFixed );
+
+  namedWindow("Template image", CV_WINDOW_AUTOSIZE );
+  imshow("Template image", imgRegister.getFixedImage() );
+
   namedWindow("Histogram: Moving image", CV_WINDOW_AUTOSIZE );
   imshow("Histogram: Moving image", histImageMoving );
+
   namedWindow("Moving image", CV_WINDOW_AUTOSIZE );
   imshow("Moving image", imgRegister.getMovingImage() );
+
   namedWindow("Joint Histogram", CV_WINDOW_AUTOSIZE );
   imshow("Joint Histogram", joint_hist );
    
   waitKey(0);  
   destroyAllWindows();
 
-  return ImageRegister::OK;    
+  return ImageRegister::OK;
 }
